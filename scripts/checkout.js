@@ -1,25 +1,26 @@
-import {cart, removeFromCart} from '../data/cart.js';
-import { products} from '../data/products.js';
+import { cart, removeFromCart } from '../data/cart.js';
+import { products } from '../data/products.js';
 import { formatCurrency } from './utils/money.js'; // one . means the current folder but .. means go out of the current folder
 import dayjs from 'https://unpkg.com/dayjs@1.11.10/esm/index.js';  // This is a default export.  This library has an EcmaScript Module hence enabling us to just use import not the script.
+import { deliveryOptions } from '../data/deliveryOptions.js';
 
 const today = dayjs();
 const deliveryDate = today.add(7, 'days');
 console.log(deliveryDate.format('dddd, MMMM D'));
 
-let cartSummaryHtml = '';
+let cartSummaryHtml = ''; 0
 
 cart.forEach((cartItem) => {
 
-    const productId = cartItem.productId;
-    // This helps us get the product with the same id as one in the cart
-    let matchingProduct;
-    products.forEach((product) => {
-        if (product.id === productId) {
-            matchingProduct = product;
-        } 
-    })
-    cartSummaryHtml += `
+  const productId = cartItem.productId;
+  // This helps us get the product with the same id as one in the cart
+  let matchingProduct;
+  products.forEach((product) => {
+    if (product.id === productId) {
+      matchingProduct = product;
+    }
+  })
+  cartSummaryHtml += `
         <div class="cart-item-container js-cart-item-container-${matchingProduct.id}">
             <div class="delivery-date">
               Delivery date: Tuesday, June 21
@@ -53,63 +54,67 @@ cart.forEach((cartItem) => {
                 <div class="delivery-options-title">
                   Choose a delivery option:
                 </div>
-                <div class="delivery-option">
-                  <input type="radio" checked
-                    class="delivery-option-input"
-                    name="delivery-option-${matchingProduct.id}">
-                  <div>
-                    <div class="delivery-option-date">
-                      Tuesday, June 21
-                    </div>
-                    <div class="delivery-option-price">
-                      FREE Shipping
-                    </div>
-                  </div>
-                </div>
-                <div class="delivery-option">
-                  <input type="radio"
-                    class="delivery-option-input"
-                    name="delivery-option-${matchingProduct.id}">
-                  <div>
-                    <div class="delivery-option-date">
-                      Wednesday, June 15
-                    </div>
-                    <div class="delivery-option-price">
-                      $4.99 - Shipping
-                    </div>
-                  </div>
-                </div>
-                <div class="delivery-option">
-                  <input type="radio"
-                    class="delivery-option-input"
-                    name="delivery-option-${matchingProduct.id}">
-                  <div>
-                    <div class="delivery-option-date">
-                      Monday, June 13
-                    </div>
-                    <div class="delivery-option-price">
-                      $9.99 - Shipping
-                    </div>
-                  </div>
-                </div>
+                ${deliveryOptionsHTML(matchingProduct)}
               </div>
             </div>
         </div>
     `;
 });
 
+// Creating the HTML code for each deliveryOptions.
+function deliveryOptionsHTML(matchingProduct) {
+  let html = '';
+
+  deliveryOptions.forEach((deliveryOptions) => {
+    const today = dayjs(); // We are using dayjs external library to format our date
+    const delvieryDate = today.add(
+      deliveryOptions.deliveryDays,
+      'days'
+    );
+    // Specify the formating that we want
+    const dateString = deliveryDate.format(
+      'dddd, MMMM D'
+    );
+
+    const priceString = deliveryOptions.priceCents === 0
+      ? 'FREE'
+      : `$${formatCurrency(deliveryOptions.priceCents)} -`;  // This means that if the deliveryOptions.priceCents === 0, priceString = "Free" else set it to the cost of shipping
+
+    html += `
+      <div class="delivery-options">
+                <div class="delivery-options-title">
+                  Choose a delivery option:
+                </div>
+                <div class="delivery-option">
+                  <input type="radio" checked
+                    class="delivery-option-input"
+                    name="delivery-option-${matchingProduct.id}">
+                  <div>
+                    <div class="delivery-option-date">
+                      ${dateString}
+                    </div>
+                    <div class="delivery-option-price">
+                      ${priceString} Shipping
+                    </div>
+                  </div>
+                </div>
+    `
+  });
+  return html;
+}
+
 document.querySelector('.js-order-summary').innerHTML = cartSummaryHtml;
 
 // adding event listeners to all Delete buttons on the checkout page.
 document.querySelectorAll('.js-delete-link').forEach((link) => {
-    link.addEventListener('click', () => {
-        const productId = link.dataset.productId  // This gives us the value of the data- attribute of the link element of the HTML that we added.
-        removeFromCart(productId);
+  link.addEventListener('click', () => {
+    const productId = link.dataset.productId  // This gives us the value of the data- attribute of the link element of the HTML that we added.
+    removeFromCart(productId);
 
-        // here we are going to remove the product from the page
-        const container = document.querySelector(`.js-cart-item-container-${productId}`); // I have attached the product id to it's container
-        container.remove(); // removes the DOM's item from the page. So, I am removing that item's div.
-    });
+    // here we are going to remove the product from the page
+    const container = document.querySelector(`.js-cart-item-container-${productId}`); // I have attached the product id to it's container
+    container.remove(); // removes the DOM's item from the page. So, I am removing that item's div.
+  });
 });
 
 // How do we know which item to delete from the cart if a delete button is clicked? We have added a id data to the button.
